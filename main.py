@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query, UploadFile, File
 from models import UserCreate, UserLogin, UserResponse, SessionCreate, SessionResponse, UserWithSessionsResponse, InternalUserResponse
-from database import create_user, get_user, create_session, get_sessions, upload_file_to_session, create_vector_store, start_thread, get_session_by_id, sessions_db
+from database import create_user, get_user, create_session, get_sessions, upload_file_to_session, create_vector_store, start_thread, get_session_by_id, sessions_db, assign_to_assistant, run_assistant
 from pydantic import EmailStr
 from typing import List
 import bcrypt
@@ -63,6 +63,12 @@ def run_session_endpoint(session_id: int):
     # Start a new thread
     thread_id = start_thread(session_id)
     session['thread_id'] = thread_id
+
+    # Assign the vector store to the assistant
+    assign_to_assistant(vector_store_id)
+
+    # Run the assistant
+    run_assistant(thread_id)
 
     # Update session in database
     for s in sessions_db:

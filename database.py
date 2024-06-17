@@ -10,7 +10,8 @@ users_db = {}
 sessions_db = []
 files_db = {}
 
-openai_client = OpenAI(api_key="sk-proj-b5eN4SYS7pb5cW7SPivGT3BlbkFJstPnEEUcIuAwik4m43rn")  # Initialize your OpenAI client here
+openai_client = OpenAI(api_key="sk-proj-TV99tomVdl4VSfsjiKwkT3BlbkFJNEyt53upIqYLzWcSzIBX")  # Initialize your OpenAI client here
+assistant_id = "asst_rni3pjhaxxgtHiXWJnzNb6I5"  # Your assistant ID
 
 def create_user(user: UserCreate):
     hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
@@ -96,3 +97,26 @@ def start_thread(session_id: int):
 
 def get_session_by_id(session_id: int):
     return next((s for s in sessions_db if s['id'] == session_id), None)
+
+def assign_to_assistant(vector_store_id: str):
+    assistant = openai_client.beta.assistants.update(
+        assistant_id=assistant_id,
+        tool_resources={"file_search": {"vector_store_ids": [vector_store_id]}}
+    )
+    return assistant
+
+def run_assistant(thread_id: str):
+    message = openai_client.beta.threads.messages.create(
+        thread_id=thread_id,
+        role="user",
+        content="Run the assistant"
+    )
+    
+    run = openai_client.beta.threads.runs.create_and_poll(
+        thread_id=thread_id, assistant_id=assistant_id
+    )
+    
+    messages = list(openai_client.beta.threads.messages.list(thread_id=thread_id, run_id=run.id))
+    message_content = messages[0].content[0].text
+    print(f"Assistant response: {message_content}")
+    return message_content
