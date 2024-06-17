@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import List
+from typing import List, Optional
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -26,7 +26,9 @@ class SessionResponse(BaseModel):
     id: int
     session_name: str
     user_email: EmailStr
-    file_path: str = None  # Optional file path
+    file_path: Optional[str] = None
+    vector_store_id: Optional[str] = None
+    thread_id: Optional[str] = None
 
 class UserWithSessionsResponse(UserResponse):
     sessions: List[SessionResponse]

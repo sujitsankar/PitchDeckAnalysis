@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Query, UploadFile, File
 from models import UserCreate, UserLogin, UserResponse, SessionCreate, SessionResponse, UserWithSessionsResponse, InternalUserResponse
-from database import create_user, get_user, create_session, get_sessions, upload_file_to_session
+from database import create_user, get_user, create_session, get_sessions, upload_file_to_session, create_vector_store, start_thread, get_session_by_id, sessions_db
 from pydantic import EmailStr
 from typing import List
 import bcrypt
@@ -45,6 +45,32 @@ def upload_file_to_session_endpoint(session_id: int, file: UploadFile = File(...
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     return session
+
+@app.post("/run/{session_id}", response_model=SessionResponse)
+def run_session_endpoint(session_id: int):
+    session = get_session_by_id(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    file_path = session.get('file_path')
+    if not file_path:
+        raise HTTPException(status_code=400, detail="No file uploaded for this session")
+
+    # Create vector store
+    vector_store_id = create_vector_store(session_id, file_path)
+    session['vector_store_id'] = vector_store_id
+
+    # Start a new thread
+    thread_id = start_thread(session_id)
+    session['thread_id'] = thread_id
+
+    # Update session in database
+    for s in sessions_db:
+        if s['id'] == session_id:
+            s['vector_store_id'] = vector_store_id
+            s['thread_id'] = thread_id
+
+    return SessionResponse(**session)
 
 @app.get("/sessions", response_model=List[SessionResponse])
 def list_sessions(email: EmailStr = Query(...)):
