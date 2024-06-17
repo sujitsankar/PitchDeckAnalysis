@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File
 from models import UserCreate, UserLogin, UserResponse, SessionCreate, SessionResponse, UserWithSessionsResponse, InternalUserResponse
-from database import create_user, get_user, create_session, get_sessions
+from database import create_user, get_user, create_session, get_sessions, upload_file_to_session
 from pydantic import EmailStr
 from typing import List
 import bcrypt
@@ -38,6 +38,13 @@ def create_session_endpoint(session: SessionCreate, email: EmailStr = Query(...)
         raise HTTPException(status_code=404, detail="User not found")
     new_session = create_session(email, session)
     return new_session
+
+@app.post("/upload_file/{session_id}", response_model=SessionResponse)
+def upload_file_to_session_endpoint(session_id: int, file: UploadFile = File(...)):
+    session = upload_file_to_session(session_id, file)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return session
 
 @app.get("/sessions", response_model=List[SessionResponse])
 def list_sessions(email: EmailStr = Query(...)):

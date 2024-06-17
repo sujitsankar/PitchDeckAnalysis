@@ -26,6 +26,7 @@ class SessionResponse(BaseModel):
     id: int
     session_name: str
     user_email: EmailStr
+    file_path: str = None  # Optional file path
 
 class UserWithSessionsResponse(UserResponse):
     sessions: List[SessionResponse]
